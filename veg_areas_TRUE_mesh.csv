@@ -1,0 +1,9 @@
+extent,zone,face_true_m2,veg_true_m2,veg_true_ft2,pct_cover
+full_765m,crest_overhang,28146,22706,244406,80.7
+full_765m,open_face,76902,56438,607492,73.4
+full_765m,toe_canopy,10819,9008,96965,83.3
+full_765m,TOTAL,115868,88152,948862,76.1
+crop_604m,crest_overhang,27796,22560,242837,81.2
+crop_604m,open_face,73514,54581,587501,74.2
+crop_604m,toe_canopy,10483,8948,96318,85.4
+crop_604m,TOTAL,111793,86089,926656,77.0

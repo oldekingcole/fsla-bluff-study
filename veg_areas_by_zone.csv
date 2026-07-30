@@ -1,0 +1,5 @@
+zone,face_area_m2,veg_area_m2,veg_area_ft2,veg_pct_cover,woody_m2_est,herbaceous_m2_est
+crest_overhang,11777.1,9635.0,103709.8,81.8,9425.6,209.3
+open_face,33127.0,24316.3,261738.2,73.4,23599.7,716.6
+toe_canopy,3673.0,3322.2,35760.2,90.5,3273.1,49.2
+TOTAL,48577.1,37273.5,401208.2,76.7,36298.4,975.1
