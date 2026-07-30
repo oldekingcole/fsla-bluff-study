@@ -214,7 +214,7 @@ var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isInter
 document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
 function wireView(id,base_,file){var b=document.getElementById(id);if(!b)return;
   if(location.protocol==='file:'){b.href=base_.split('?')[0].split('#')[0];b.classList.add('off');b.textContent='hosted site only';return;}
-  b.href=base_+encodeURIComponent(new URL(file,location.href).href);}
+  b.href=base_+new URL(file,location.href).href;}
 wireView('ssbtn','https://superspl.at/editor?load=','bluff_splat_web.ply');
 wireView('o3dbtn','https://3dviewer.net/#model=','bluff_mesh_web.ply');
 (function(){ if(!window.L||!GEO){return;} var f=document.getElementById('mapfallback'); if(f)f.style.display='none';
