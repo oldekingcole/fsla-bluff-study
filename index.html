@@ -212,9 +212,14 @@ function tgl(){var r=document.documentElement,cur=r.getAttribute('data-theme');
   r.setAttribute('data-theme',dark?'light':'dark');}
 var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting)x.target.classList.add('in');});},{threshold:.08});
 document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+function cdnURL(file){var m=location.hostname.match(/^([^.]+)\.github\.io$/);
+  if(m){var seg=location.pathname.split('/').filter(Boolean);
+    var repo=seg.length?seg[0]:(m[1]+'.github.io');
+    return 'https://cdn.jsdelivr.net/gh/'+m[1]+'/'+repo+'@f853086/'+file;}   // pinned commit: immutable, no stale-cache
+  return new URL(file,location.href).href;}
 function wireView(id,base_,file){var b=document.getElementById(id);if(!b)return;
   if(location.protocol==='file:'){b.href=base_.split('?')[0].split('#')[0];b.classList.add('off');b.textContent='hosted site only';return;}
-  b.href=base_+new URL(file,location.href).href;}
+  b.href=base_+cdnURL(file);}
 wireView('ssbtn','https://superspl.at/editor?load=','bluff_splat_web.ply');
 wireView('o3dbtn','https://3dviewer.net/#model=','bluff_mesh_web.ply');
 (function(){ if(!window.L||!GEO){return;} var f=document.getElementById('mapfallback'); if(f)f.style.display='none';
