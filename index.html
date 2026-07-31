@@ -170,10 +170,24 @@ footer{padding:34px 0 60px;color:var(--ink2);font-family:var(--mono);font-size:1
 
 <script>
 var natW=38271,natH=5199,imgH=natH/natW,H1=0.399,H2=0.918,CL=0.079,CR=0.869,GEO={"s": 30.35256577600898, "w": -97.80898803502359, "n": 30.354819348862108, "e": -97.8030789338412},TDMETA={"south": 30.352565754707165, "west": -97.80898803502357, "north": 30.354819348862097, "east": -97.8030788981183, "minzoom": 14, "maxzoom": 22};
-if(window.OpenSeadragon){
+// ---- critical UI FIRST: never blocked by a viewer error ----
+function tgl(){var r=document.documentElement,cur=r.getAttribute('data-theme');
+  var dark=cur?cur==='dark':matchMedia('(prefers-color-scheme:dark)').matches;
+  r.setAttribute('data-theme',dark?'light':'dark');}
+function showAll(){document.querySelectorAll('.reveal').forEach(function(el){el.classList.add('in');});}
+try{var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting)x.target.classList.add('in');});},{threshold:.06});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});}catch(e){showAll();}
+setTimeout(showAll,2500);   // hard fallback: content is NEVER left hidden
+function cdnURL(file){return new URL(file,location.href).href;}
+function wireView(id,base_,file){var b=document.getElementById(id);if(!b)return;
+  if(location.protocol==='file:'){b.href=base_.split('?')[0].split('#')[0];b.classList.add('off');b.textContent='hosted site only';return;}
+  b.href=base_+cdnURL(file);}
+try{wireView('o3dbtn','https://3dviewer.net/#model=','bluff_mesh_web.ply');}catch(e){}
+// ---- facade deep-zoom (isolated) ----
+try{ if(window.OpenSeadragon){
   var osd=OpenSeadragon({id:'osd',prefixUrl:'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/',
     tileSources:'tiles/facade.dzi',showNavigator:false,visibilityRatio:1,constrainDuringPan:true,
-    minZoomImageRatio:0.9,maxZoomPixelRatio:2.5,animationTime:0.5,background:'#0c0f0a',gestureSettingsMouse:{clickToZoom:false}});
+    minZoomImageRatio:0.9,maxZoomPixelRatio:2.5,animationTime:0.5,gestureSettingsMouse:{clickToZoom:false}});
   osd.addHandler('open',function(){
     var vi=document.createElement('img'); vi.src='tiles/facade_veg.png'; vi.id='vegimg';
     vi.style.width='100%'; vi.style.height='100%'; vi.style.opacity=0.6;
@@ -184,28 +198,19 @@ if(window.OpenSeadragon){
     line('cl','osdcrop',new OpenSeadragon.Rect(CL,0,0.0005,imgH));
     line('cr','osdcrop',new OpenSeadragon.Rect(CR,0,0.0005,imgH));
   });
-  document.getElementById('vegchk').onchange=function(e){var v=document.getElementById('vegimg'); if(v)v.style.display=e.target.checked?'block':'none';};
-  document.getElementById('vegop').oninput=function(e){var v=document.getElementById('vegimg'); if(v)v.style.opacity=e.target.value/100;};
-  document.getElementById('zonechk').onchange=function(e){var d=e.target.checked?'block':'none';['b1','b2'].forEach(function(i){var el=document.getElementById(i); if(el)el.style.display=d;});};
-  document.getElementById('cropchk').onchange=function(e){var d=e.target.checked?'block':'none';['cl','cr'].forEach(function(i){var el=document.getElementById(i); if(el)el.style.display=d;});};
-}
-function tgl(){var r=document.documentElement,cur=r.getAttribute('data-theme');
-  var dark=cur?cur==='dark':matchMedia('(prefers-color-scheme:dark)').matches;
-  r.setAttribute('data-theme',dark?'light':'dark');}
-var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting)x.target.classList.add('in');});},{threshold:.08});
-document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
-function cdnURL(file){return new URL(file,location.href).href;}   // same-origin GitHub Pages URL: CORS *, no CDN edge/stale/partial issues
-function wireView(id,base_,file){var b=document.getElementById(id);if(!b)return;
-  if(location.protocol==='file:'){b.href=base_.split('?')[0].split('#')[0];b.classList.add('off');b.textContent='hosted site only';return;}
-  b.href=base_+cdnURL(file);}
-wireView('o3dbtn','https://3dviewer.net/#model=','bluff_mesh_web.ply');   // splat now uses a hosted SuperSplat published viewer (fixed href)
-(function(){ if(!window.L){return;}
+  var vc=document.getElementById('vegchk'); if(vc)vc.onchange=function(e){var v=document.getElementById('vegimg'); if(v)v.style.display=e.target.checked?'block':'none';};
+  var vp=document.getElementById('vegop'); if(vp)vp.oninput=function(e){var v=document.getElementById('vegimg'); if(v)v.style.opacity=e.target.value/100;};
+  var zc=document.getElementById('zonechk'); if(zc)zc.onchange=function(e){var d=e.target.checked?'block':'none';['b1','b2'].forEach(function(i){var el=document.getElementById(i); if(el)el.style.display=d;});};
+  var cc=document.getElementById('cropchk'); if(cc)cc.onchange=function(e){var d=e.target.checked?'block':'none';['cl','cr'].forEach(function(i){var el=document.getElementById(i); if(el)el.style.display=d;});};
+}}catch(e){}
+// ---- top-down deep-zoom map (isolated) ----
+try{ if(window.L){
   var m=L.map('leafmap',{zoomControl:true,scrollWheelZoom:true,maxZoom:23});
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     {maxZoom:23,maxNativeZoom:19,attribution:'Imagery &copy; Esri'}).addTo(m);
   var bb=[[TDMETA.south,TDMETA.west],[TDMETA.north,TDMETA.east]];
   L.tileLayer('tiles/topdown/{z}/{x}/{y}.png',{minNativeZoom:TDMETA.minzoom,maxNativeZoom:TDMETA.maxzoom,maxZoom:23,bounds:bb,opacity:1}).addTo(m);
   m.fitBounds(bb); setTimeout(function(){m.invalidateSize();m.fitBounds(bb);},400);
-})();
+}}catch(e){}
 </script>
 </body></html>
