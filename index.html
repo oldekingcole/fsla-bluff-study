@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bluff Vegetation Survey — Lake Austin</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bluff Vegetation Survey — Lake Austin</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script><style>
 
 :root{--stone:#E6E3D8;--paper:#F1EEE6;--card:#FBFAF5;--ink:#22271F;--ink2:#575E4E;--oak:#3B6B3A;
   --oak-d:#2E5730;--lake:#2C7A7B;--rock:#A99C86;--line:#D6D1C2;
@@ -86,6 +86,10 @@ footer{padding:34px 0 60px;color:var(--ink2);font-family:var(--mono);font-size:1
 .reveal.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 .themebtn{position:fixed;right:14px;top:14px;z-index:900;font-family:var(--mono);font-size:11px;letter-spacing:.05em;border:1px solid var(--line);background:var(--card);color:var(--ink2);border-radius:999px;padding:7px 13px;cursor:pointer}
+.osd{width:100%;height:min(58vw,470px);background:#0c0f0a}
+.osdband{border-top:2px dashed rgba(255,255,255,.6);pointer-events:none}
+.osdcrop{border-left:2px solid rgba(255,209,102,.9);pointer-events:none}
+.osd .openseadragon-container{background:#0c0f0a!important}
 
 </style>
 </head><body>
@@ -106,22 +110,16 @@ footer{padding:34px 0 60px;color:var(--ink2);font-family:var(--mono);font-size:1
       <source src="bluff_3d_flythrough.mp4" type="video/mp4"></video><div class="vidtag">3D reconstruction · flythrough</div></div></div>
 </div></div></div>
 
-<section id="facade" class="reveal"><div class="wrap">
+<section id="facade"><div class="wrap">
   <div class="eyebrow">Explore the face</div><h2>Interactive bluff elevation</h2>
-  <p class="lede">Drag to pan, scroll or use +/− to zoom. Toggle the vegetation layer and the three
-    analysis zones. Yellow lines mark the 604&nbsp;m reporting section.</p>
-  <div class="viewer"><div class="stage" id="stage"><div class="pan" id="pan">
-        <img id="baseimg" src="facade.jpg" alt="bluff facade orthomosaic">
-        <img id="vegimg" src="facade_veg.png" alt="vegetation overlay">
-        <div class="band" id="b1"><span>Crest overhang</span></div>
-        <div class="band" id="b2"><span>Open face</span></div>
-        <div class="cropline" id="cl"></div><div class="cropline" id="cr"></div></div></div>
+  <p class="lede">Deep-zoom the full 2&nbsp;cm/px ortho — drag to pan, scroll to zoom right into
+    branch and rock detail. Toggle the vegetation layer and the analysis zones.</p>
+  <div class="viewer"><div id="osd" class="osd"></div>
     <div class="ctrls">
       <label><input type="checkbox" id="vegchk" checked> Vegetation</label>
       <label>opacity <input type="range" id="vegop" min="0" max="100" value="60"></label>
       <label><input type="checkbox" id="zonechk" checked> Zones</label>
       <label><input type="checkbox" id="cropchk" checked> 604&nbsp;m crop</label>
-      <div class="zoombtns"><button onclick="zoom(-1)">−</button><button onclick="zoom(1)">+</button><button onclick="reset()">↺</button></div>
     </div></div>
   <div class="legend">
     <span class="k"><span class="sw" style="background:rgba(220,40,60,.6)"></span>Vegetation (not exposed rock)</span>
@@ -144,10 +142,10 @@ footer{padding:34px 0 60px;color:var(--ink2);font-family:var(--mono);font-size:1
     88,152 m&sup2; true-surface, 78% vegetated.</div>
 </div></section>
 
-<section id="map" class="reveal"><div class="wrap">
+<section id="map"><div class="wrap">
   <div class="eyebrow">Site context</div><h2>Top-down map</h2>
   <p class="lede">The survey ortho draped on live satellite imagery — pan and zoom like any web map.</p>
-  <div class="mapwrap"><div id="leafmap"></div><img id="mapfallback" src="topdown_overlay.png" alt="top-down orthomosaic"></div>
+  <div class="mapwrap"><div id="leafmap"></div></div>
 </div></section>
 
 <section class="reveal"><div class="wrap">
@@ -171,42 +169,26 @@ footer{padding:34px 0 60px;color:var(--ink2);font-family:var(--mono);font-size:1
 <footer><div class="wrap">Bluff Face Vegetation Survey &middot; capture 2026-07-29 &middot; Austin, TX</div></footer>
 
 <script>
-var natW=6000,natH=815,H1=0.399,H2=0.918,CL=0.079,CR=0.869,GEO={"s": 30.35256577600898, "w": -97.80898803502359, "n": 30.354819348862108, "e": -97.8030789338412};
-var pan=document.getElementById('pan'),stage=document.getElementById('stage');
-var base=document.getElementById('baseimg'),veg=document.getElementById('vegimg');
-var st={x:0,y:0,s:1,fit:1};
-function layout(){
-  var w=stage.clientWidth,fit=w/natW,h=natH*fit; st.fit=fit;
-  base.style.width=veg.style.width=natW+'px'; base.style.height=veg.style.height=natH+'px';
-  document.getElementById('b1').style.top=(natH*H1)+'px';
-  document.getElementById('b2').style.top=(natH*H2)+'px';
-  document.getElementById('cl').style.left=(natW*CL)+'px';
-  document.getElementById('cr').style.left=(natW*CR)+'px';
-  stage.style.height=Math.min(h,440)+'px';
-  if(st.s===1&&st.x===0&&st.y===0){st.s=fit;center();} apply();
+var natW=38271,natH=5199,imgH=natH/natW,H1=0.399,H2=0.918,CL=0.079,CR=0.869,GEO={"s": 30.35256577600898, "w": -97.80898803502359, "n": 30.354819348862108, "e": -97.8030789338412},TDMETA={"south": 30.352565754707165, "west": -97.80898803502357, "north": 30.354819348862097, "east": -97.8030788981183, "minzoom": 14, "maxzoom": 22};
+if(window.OpenSeadragon){
+  var osd=OpenSeadragon({id:'osd',prefixUrl:'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/',
+    tileSources:'tiles/facade.dzi',showNavigator:false,visibilityRatio:1,constrainDuringPan:true,
+    minZoomImageRatio:0.9,maxZoomPixelRatio:2.5,animationTime:0.5,background:'#0c0f0a',gestureSettingsMouse:{clickToZoom:false}});
+  osd.addHandler('open',function(){
+    var vi=document.createElement('img'); vi.src='tiles/facade_veg.png'; vi.id='vegimg';
+    vi.style.width='100%'; vi.style.height='100%'; vi.style.opacity=0.6;
+    osd.addOverlay({element:vi,location:new OpenSeadragon.Rect(0,0,1,imgH)});
+    function line(id,cls,rect){var d=document.createElement('div'); d.id=id; d.className=cls; osd.addOverlay({element:d,location:rect});}
+    line('b1','osdband',new OpenSeadragon.Rect(0,imgH*H1,1,0.0008));
+    line('b2','osdband',new OpenSeadragon.Rect(0,imgH*H2,1,0.0008));
+    line('cl','osdcrop',new OpenSeadragon.Rect(CL,0,0.0005,imgH));
+    line('cr','osdcrop',new OpenSeadragon.Rect(CR,0,0.0005,imgH));
+  });
+  document.getElementById('vegchk').onchange=function(e){var v=document.getElementById('vegimg'); if(v)v.style.display=e.target.checked?'block':'none';};
+  document.getElementById('vegop').oninput=function(e){var v=document.getElementById('vegimg'); if(v)v.style.opacity=e.target.value/100;};
+  document.getElementById('zonechk').onchange=function(e){var d=e.target.checked?'block':'none';['b1','b2'].forEach(function(i){var el=document.getElementById(i); if(el)el.style.display=d;});};
+  document.getElementById('cropchk').onchange=function(e){var d=e.target.checked?'block':'none';['cl','cr'].forEach(function(i){var el=document.getElementById(i); if(el)el.style.display=d;});};
 }
-function center(){st.x=(stage.clientWidth-natW*st.s)/2; st.y=(stage.clientHeight-natH*st.s)/2;}
-function apply(){pan.style.transform='translate('+st.x+'px,'+st.y+'px) scale('+st.s+')';}
-function reset(){st.s=st.fit;center();apply();}
-function zoom(d){var cx=stage.clientWidth/2,cy=stage.clientHeight/2,f=d>0?1.3:1/1.3;
-  var ns=Math.max(st.fit*.9,Math.min(st.fit*14,st.s*f));
-  st.x=cx-(cx-st.x)*(ns/st.s); st.y=cy-(cy-st.y)*(ns/st.s); st.s=ns; apply();}
-stage.addEventListener('wheel',function(e){e.preventDefault();
-  var r=stage.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top,f=e.deltaY<0?1.12:1/1.12;
-  var ns=Math.max(st.fit*.9,Math.min(st.fit*14,st.s*f));
-  st.x=cx-(cx-st.x)*(ns/st.s); st.y=cy-(cy-st.y)*(ns/st.s); st.s=ns; apply();},{passive:false});
-var drag=false,px,py;
-stage.addEventListener('pointerdown',function(e){drag=true;px=e.clientX;py=e.clientY;stage.classList.add('drag');stage.setPointerCapture(e.pointerId);});
-stage.addEventListener('pointermove',function(e){if(!drag)return;st.x+=e.clientX-px;st.y+=e.clientY-py;px=e.clientX;py=e.clientY;apply();});
-stage.addEventListener('pointerup',function(){drag=false;stage.classList.remove('drag');});
-document.getElementById('vegchk').onchange=function(e){veg.style.display=e.target.checked?'block':'none';};
-document.getElementById('vegop').oninput=function(e){veg.style.opacity=e.target.value/100;};
-veg.style.opacity=.6;
-document.getElementById('zonechk').onchange=function(e){var d=e.target.checked?'block':'none';
-  document.getElementById('b1').style.display=d;document.getElementById('b2').style.display=d;};
-document.getElementById('cropchk').onchange=function(e){var d=e.target.checked?'block':'none';
-  document.getElementById('cl').style.display=d;document.getElementById('cr').style.display=d;};
-window.addEventListener('resize',layout); layout();
 function tgl(){var r=document.documentElement,cur=r.getAttribute('data-theme');
   var dark=cur?cur==='dark':matchMedia('(prefers-color-scheme:dark)').matches;
   r.setAttribute('data-theme',dark?'light':'dark');}
@@ -217,12 +199,13 @@ function wireView(id,base_,file){var b=document.getElementById(id);if(!b)return;
   if(location.protocol==='file:'){b.href=base_.split('?')[0].split('#')[0];b.classList.add('off');b.textContent='hosted site only';return;}
   b.href=base_+cdnURL(file);}
 wireView('o3dbtn','https://3dviewer.net/#model=','bluff_mesh_web.ply');   // splat now uses a hosted SuperSplat published viewer (fixed href)
-(function(){ if(!window.L||!GEO){return;} var f=document.getElementById('mapfallback'); if(f)f.style.display='none';
-  var m=L.map('leafmap',{zoomControl:true,scrollWheelZoom:true});
+(function(){ if(!window.L){return;}
+  var m=L.map('leafmap',{zoomControl:true,scrollWheelZoom:true,maxZoom:23});
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {maxZoom:21,maxNativeZoom:19,attribution:'Imagery &copy; Esri'}).addTo(m);
-  var b=[[GEO.s,GEO.w],[GEO.n,GEO.e]];
-  L.imageOverlay('topdown_overlay.png',b,{opacity:1}).addTo(m); m.fitBounds(b);
+    {maxZoom:23,maxNativeZoom:19,attribution:'Imagery &copy; Esri'}).addTo(m);
+  var bb=[[TDMETA.south,TDMETA.west],[TDMETA.north,TDMETA.east]];
+  L.tileLayer('tiles/topdown/{z}/{x}/{y}.png',{minNativeZoom:TDMETA.minzoom,maxNativeZoom:TDMETA.maxzoom,maxZoom:23,bounds:bb,opacity:1}).addTo(m);
+  m.fitBounds(bb); setTimeout(function(){m.invalidateSize();m.fitBounds(bb);},400);
 })();
 </script>
 </body></html>
